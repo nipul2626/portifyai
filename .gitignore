@@ -1,10 +1,53 @@
-# v0 runtime files (should only exist in preview, not in git)
-__v0_runtime_loader.js
-__v0_devtools.tsx
-__v0_jsx-dev-runtime.ts
-
-# Common ignores
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+
+# Next.js
 .next/
+out/
+build/
+dist/
+
+# Production
+/build
+
+# Environment variables (CRITICAL!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env*.local
+
+# Vercel
+.vercel
+
+# Turbopack
+.turbo
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
 .DS_Store
+Thumbs.db
+*.bak
+
+# Misc
+*.log
+.cache/
