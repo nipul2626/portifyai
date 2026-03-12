@@ -1,64 +1,64 @@
-import axios from 'axios'
+import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://portifybackend-production.up.railway.app";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-})
+  withCredentials: true, // ⭐ allow cookies
+});
 
-// Add auth token to requests
+// Attach access token
 apiClient.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token')
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("accessToken");
+
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`;
     }
   }
-  return config
-})
+  return config;
+});
 
-// Handle errors and token refresh
+// Handle 401 → refresh access token
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
 
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
 
-      try {
-        // Try to refresh token
-        const refreshToken = localStorage.getItem('refreshToken')
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          })
+        try {
+          // Refresh token endpoint (cookie is sent automatically)
+          const response = await axios.post(
+              `${API_BASE_URL}/auth/refresh`,
+              {},
+              { withCredentials: true }
+          );
 
-          const { token, refreshToken: newRefreshToken } = response.data.data
-          localStorage.setItem('token', token)
-          localStorage.setItem('refreshToken', newRefreshToken)
+          const newAccessToken = response.data.data.accessToken;
 
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${token}`
-          return apiClient(originalRequest)
+          localStorage.setItem("accessToken", newAccessToken);
+
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("user");
+            window.location.href = "/login";
+          }
         }
-      } catch (refreshError) {
-        // Refresh failed, redirect to login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('token')
-          localStorage.removeItem('refreshToken')
-          window.location.href = '/login'
-        }
-        return Promise.reject(refreshError)
       }
+
+      return Promise.reject(error);
     }
+);
 
-    return Promise.reject(error)
-  }
-)
-
-export default apiClient
+export default apiClient;
